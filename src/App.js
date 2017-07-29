@@ -23,8 +23,7 @@ class App extends Component {
                     text: 'Movie Sentiment'
                 },
                 xAxis: {
-                    type: 'datetime',
-                    tickPixelInterval: 150
+                    type: 'datetime'
                 },
                 yAxis: {
                     title: {
@@ -85,14 +84,9 @@ class App extends Component {
         })
         , 1000)
         
-        //let00 timer0 = setInterval(()=> this.getTweets(), 1000)
-
-
     }
 
     getSeries(tweets) {
-        console.log("get series");
-        console.log(tweets);
         tweets = tweets.tweets;
         let series = _.cloneDeep(this.state.config.series[0].data);
         let tweet_count = this.state.tweet_count;
@@ -105,22 +99,8 @@ class App extends Component {
             let average = total_rating/tweet_count;
             series.push([tweets[i].timestamp, average]);
         }
-        console.log('new series');
-        console.log(series);
-        return [tweets, series, tweet_count, total_rating];
 
-        //let last_timestamp = tweets[tweets.length-1].timestamp;
-        //console.log(last_timestamp);
-        
-/*
-        this.setState({
-            ...this.state,
-            config:{
-                ...this.state.config,
-                ...series
-            }
-        });
-*/
+        return [tweets, series, tweet_count, total_rating];
 
     }
 
@@ -130,8 +110,6 @@ class App extends Component {
     }
 
     render() {
-        console.log("state");
-        console.log(this.state);
         return (
             <div className="App">
 
@@ -167,7 +145,15 @@ class App extends Component {
                                     <div className="panel-body">
                                         <ul className="chat">
                                             {this.state.tweets && this.state.tweets.map(function (tweet, i) {
-
+                                                let sentiment_color = 'positive';
+                                                console.log(tweet.sentiment.positive);
+                                                if(tweet.sentiment.positive > .70){
+                                                    sentiment_color = 'positive';
+                                                }else if(tweet.sentiment.positive > .50){
+                                                    sentiment_color = 'neutral';
+                                                }else{
+                                                    sentiment_color = 'negative';
+                                                }
                                                 return (
                                                 <li key={i} className="right clearfix">
                                                 <div className="chat-body">
@@ -175,7 +161,7 @@ class App extends Component {
                                                         <small className="text-muted"><span className="glyphicon glyphicon-time">[{moment(tweet.timestamp).format("ddd,MMM Do-h:mm:ssa")}]</span></small>
                                                     </div>
                                                     <p className="tweet">
-                                                        <span className='sentiment'>
+                                                        <span className={"sentiment "+sentiment_color}>
                                                            <strong>[{tweet.sentiment.positive}] -&nbsp; </strong>
                                                         </span>
                                                         {tweet.tweet}
@@ -202,12 +188,19 @@ class App extends Component {
                                 <div className="panel-collapse collapse in" id="collapseOne">
                                     <div className="panel-body">
                                         <h4>Avg Sentiment : {Math.round(this.state.sentiment * 100) / 100}</h4>
+                                        <h4>Number of Tweets : {this.state.tweet_count}</h4>
                                     </div>
                                 </div>
                             </div>
                         </Col>
                     </Row>
                 </Grid>
+                <footer className="footer">
+                  <div className="container">
+                    <p className="text-muted">Front end - React; Twitter Bootstrap</p>
+                    <p className="text-muted">Back end - Python (Flask); Kafka (Data Ingestion); Twitter Stream API; MongoDB</p>
+                  </div>
+                </footer>
             </div>
         );
     }
