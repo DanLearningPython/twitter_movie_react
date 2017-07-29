@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import ReactDOM from 'react-dom';
 import './App.css';
 import {Button, Navbar, Nav, NavItem, Col, Grid, Row} from 'react-bootstrap';
 import tweetApi from "./tweetApi";
@@ -31,7 +32,7 @@ class App extends Component {
                     }
                 },
                 chart: {
-                    type: 'line'
+                    type: 'spline'
                 },
                 series: [{
                     name: 'MOVIE',
@@ -40,7 +41,7 @@ class App extends Component {
                         valueDecimals: 2
                     }
                 }]
-            }
+            },
         };
 
     }
@@ -80,10 +81,10 @@ class App extends Component {
                     }
                 }
             })
-
+            this.scrollToBottom();
         })
-        , 10000)
-
+        , 1000)
+        
         //let00 timer0 = setInterval(()=> this.getTweets(), 1000)
 
 
@@ -106,7 +107,6 @@ class App extends Component {
         }
         console.log('new series');
         console.log(series);
-
         return [tweets, series, tweet_count, total_rating];
 
         //let last_timestamp = tweets[tweets.length-1].timestamp;
@@ -122,6 +122,11 @@ class App extends Component {
         });
 */
 
+    }
+
+    scrollToBottom() {
+        const node = ReactDOM.findDOMNode(this.refs.tweetsEnd);
+        node.scrollIntoView({ behavior: "smooth" });
     }
 
     render() {
@@ -153,23 +158,56 @@ class App extends Component {
                     </Row>
                     <Row className="show-grid">
                         <Col xs={12} md={8}>
-                            {this.state.tweets && this.state.tweets.map(function (tweet, i) {
+                            <div id="tweet-list" className="panel panel-default">
+                                <div className="panel-heading" id="accordion">
+                                    <div className="input-group">
+                                    </div>
+                                </div>
+                                <div className="panel-collapse collapse in" id="collapseOne">
+                                    <div className="panel-body">
+                                        <ul className="chat">
+                                            {this.state.tweets && this.state.tweets.map(function (tweet, i) {
 
-                                return (
-                                    <div key = {i} >
-                                        <strong>[{moment(tweet.timestamp).format("ddd, MMM Do - h:mm:ss a")}] :</strong>
-                                        {tweet.tweet}{tweet.sentiment.positive}
-                                    </div >
-                                );
-                            })}
+                                                return (
+                                                <li key={i} className="right clearfix">
+                                                <div className="chat-body">
+                                                    <div className="header timestamp">
+                                                        <small className="text-muted"><span className="glyphicon glyphicon-time">[{moment(tweet.timestamp).format("ddd,MMM Do-h:mm:ssa")}]</span></small>
+                                                    </div>
+                                                    <p className="tweet">
+                                                        <span className='sentiment'>
+                                                           <strong>[{tweet.sentiment.positive}] -&nbsp; </strong>
+                                                        </span>
+                                                        {tweet.tweet}
+
+                                                    </p>
+                                                </div>
+                                                </li>
+                                                );
+                                               
+                                            })}
+                                        </ul>
+                                        <span ref="tweetsEnd" id="tweetsEnd">Waiting for more tweets</span>
+                                    </div>
+                                </div>
+                            </div>
                         </Col>
                         <Col xs={6} md={4}>
-                            <code>&lt;{'Col xs={6} md={4}'} /&gt;</code>
+                            
+                            <div className="panel panel-default">
+                                <div className="panel-heading" id="accordion">
+                                    <div className="input-group">
+                                    </div>
+                                </div>
+                                <div className="panel-collapse collapse in" id="collapseOne">
+                                    <div className="panel-body">
+                                        <h4>Avg Sentiment : {Math.round(this.state.sentiment * 100) / 100}</h4>
+                                    </div>
+                                </div>
+                            </div>
                         </Col>
                     </Row>
                 </Grid>
-
-
             </div>
         );
     }
