@@ -4,7 +4,9 @@
   "private": true,
   "dependencies": {
     "axios": "^0.16.2",
+    "highcharts": "^5.0.14",
     "lodash": "^4.17.4",
+    "moment": "^2.18.1",
     "react": "^15.6.1",
     "react-bootstrap": "^0.31.1",
     "react-dom": "^15.6.1",

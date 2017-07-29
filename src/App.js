@@ -1,143 +1,178 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import './App.css';
-import { Button, Navbar, Nav, NavItem, Col, Grid, Row } from 'react-bootstrap';
+import {Button, Navbar, Nav, NavItem, Col, Grid, Row} from 'react-bootstrap';
 import tweetApi from "./tweetApi";
-import { deepclone } from 'lodash'
-const ReactHighcharts = require('react-highcharts'); // Expects that Highcharts was loaded in the code.
-const ReactHighstock = require('react-highcharts/ReactHighstock')
-//let data = [[1220832000000, 22.56], [1220918400000, 21.67], [1221004800000, 21.66], [1221091200000, 21.81], [1221177600000, 21.28], [1221436800000, 20.05], [1221523200000, 19.98], [1221609600000, 18.26], [1221696000000, 19.16], [1221782400000, 20.13], [1222041600000, 18.72], [1222128000000, 18.12], [1222214400000, 18.39], [1222300800000, 18.85], [1222387200000, 18.32], [1222646400000, 15.04], [1222732800000, 16.24], [1222819200000, 15.59], [1222905600000, 14.3], [1222992000000, 13.87], [1223251200000, 14.02], [1223337600000, 12.74], [1223424000000, 12.83], [1223510400000, 12.68], [1223596800000, 13.8], [1223856000000, 15.75], [1223942400000, 14.87], [1224028800000, 13.99], [1224115200000, 14.56], [1224201600000, 13.91], [1224460800000, 14.06], [1224547200000, 13.07], [1224633600000, 13.84], [1224720000000, 14.03], [1224806400000, 13.77], [1225065600000, 13.16], [1225152000000, 14.27], [1225238400000, 14.94], [1225324800000, 15.86], [1225411200000, 15.37], [1225670400000, 15.28], [1225756800000, 15.86], [1225843200000, 14.76], [1225929600000, 14.16], [1226016000000, 14.03], [1226275200000, 13.7], [1226361600000, 13.54], [1226448000000, 12.87], [1226534400000, 13.78], [1226620800000, 12.89], [1226880000000, 12.59], [1226966400000, 12.84], [1227052800000, 12.33], [1227139200000, 11.5], [1227225600000, 11.8], [1227484800000, 13.28], [1227571200000, 12.97], [1227657600000, 13.57], [1227830400000, 13.24], [1228089600000, 12.7], [1228176000000, 13.21], [1228262400000, 13.7], [1228348800000, 13.06], [1228435200000, 13.43], [1228694400000, 14.25], [1228780800000, 14.29], [1228867200000, 14.03], [1228953600000, 13.57], [1229040000000, 14.04], [1229299200000, 13.54]];
-let x = 1229299300000;
-
-
-
+import _ from 'lodash'
+import {LineGraph} from './LineGraph';
+import moment from "moment";
 
 class App extends Component {
 
-  constructor(props) {
-      super(props);
+    constructor(props) {
+        super(props);
 
-      this.state = {
-          tweets : [],
-          config :{
+        this.state = {
+            sentiment : 0.5,
+            tweet_count : 0,
+            total_rating : 0,
+            timestamp : 0,
+            tweets: [],
+            config: {
+                title: {
+                    text: 'Movie Sentiment'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150
+                },
+                yAxis: {
+                    title: {
+                        text: 'Average Score'
+                    }
+                },
+                chart: {
+                    type: 'line'
+                },
+                series: [{
+                    name: 'MOVIE',
+                    data: [],
+                    tooltip: {
+                        valueDecimals: 2
+                    }
+                }]
+            }
+        };
 
-        chart: {
-            type: 'spline',
-            animation: ReactHighcharts.svg, // don't animate in old IE
-            marginRight: 10,
+    }
 
-        },
-            rangeSelector: {
-              enabled: false,
-            plotOptions: {
-                series: {
-                    animation: true
+    componentDidMount() {
+
+        let timer = setInterval(()=>tweetApi.requestTweet(this.state.timestamp).then(tweets => {
+            if(tweets.length === 0){
+                //no data
+                return false;
+            }else{
+                return this.getSeries(tweets);
+            }
+        }).then(tweets_formatted => {
+            if(tweets_formatted[0].length === 0){
+                //no data
+                return false;
+            }
+            let last_timestamp = tweets_formatted[1][tweets_formatted[1].length-1][0];
+            let sentiment_average =  tweets_formatted[3]/tweets_formatted[2];
+
+            this.setState({
+                ...this.state,
+                tweets: this.state.tweets.concat(tweets_formatted[0]),
+                sentiment: sentiment_average,
+                tweet_count : tweets_formatted[2],
+                total_rating: tweets_formatted[3],
+                timestamp : last_timestamp,
+                config : {
+                    ...this.state.config,
+                    series:{
+                        [0] :{
+                            ...this.state.config.series[0],
+                            data : tweets_formatted[1]
+                        }
+                        
+                    }
                 }
-            },
-        xAxis: {
-            type: 'datetime',
-            tickPixelInterval: 150
-        },
-            selected: 1
-            },
-            title: {
-              text: 'MOVIE Tweet Sentiment Analysis'
-            },
-            series: [{
-              type: 'line',
-              name: 'MOVIE',
-              data: [[1229299200000,0]],
-              tooltip: {
-                valueDecimals: 2
-              }
-            }]
-          }
-      };
+            })
 
-  }
+        })
+        , 10000)
 
-  componentDidMount() {
-
-    let timer = setInterval(()=> this.getTweets(), 10000)
-
-    tweetApi.requestTweet().then(tweets => {
-      this.setState(
-          {
-            ...tweets
-          }
-        )
-    });
-    
-
-  }
+        //let00 timer0 = setInterval(()=> this.getTweets(), 1000)
 
 
+    }
 
-async getTweets(){
+    getSeries(tweets) {
+        console.log("get series");
+        console.log(tweets);
+        tweets = tweets.tweets;
+        let series = _.cloneDeep(this.state.config.series[0].data);
+        let tweet_count = this.state.tweet_count;
+        let total_rating = this.state.total_rating;
 
-  x = x + 3600; // current time
-  let y = Math.round(Math.random() * 20);
-  let series = this.state.config.series[0].data;
-  series = series.push([x,y]);
-  /*
-  this.setState({
-      
-  ...this.state,
-  config : {
-    ...this.state.config,
-    ...series
-  }
-      
-  });  
+        
+        for(let i = 0 , l = tweets.length ; i < l ; i++){
+            tweet_count++;
+            total_rating = total_rating + tweets[i].sentiment.positive;
+            let average = total_rating/tweet_count;
+            series.push([tweets[i].timestamp, average]);
+        }
+        console.log('new series');
+        console.log(series);
+
+        return [tweets, series, tweet_count, total_rating];
+
+        //let last_timestamp = tweets[tweets.length-1].timestamp;
+        //console.log(last_timestamp);
+        
+/*
+        this.setState({
+            ...this.state,
+            config:{
+                ...this.state.config,
+                ...series
+            }
+        });
 */
-  var chart = this.refs.renderedchart.getChart();
-  console.log(x);
-    chart.series[0].addPoint([x,y]);
 
-}
+    }
 
-  render() {
-    console.log(this.state);
-    return (
-      <div className="App">
+    render() {
+        console.log("state");
+        console.log(this.state);
+        return (
+            <div className="App">
 
-        <Navbar inverse collapseOnSelect>
-          <Navbar.Header>
-            <Navbar.Brand>
-              <a href="/">Movie Tweets</a>
-            </Navbar.Brand>
-            <Navbar.Toggle />
-          </Navbar.Header>
-          <Navbar.Collapse>
-            <Nav pullRight>
-              <NavItem eventKey={1} target="_blank" href="https://github.com/DanLearningPython">Github</NavItem>
-            </Nav>
-          </Navbar.Collapse>
-        </Navbar>
-        <Grid>
-          <Row className="show-grid">
-            <Col md={12}>        
-              <ReactHighcharts config={this.state.config} ref="renderedchart"></ReactHighcharts>
-            </Col>
-          </Row>
+                <Navbar inverse collapseOnSelect>
+                    <Navbar.Header>
+                        <Navbar.Brand>
+                            <a href="/">Movie Tweets</a>
+                        </Navbar.Brand>
+                        <Navbar.Toggle />
+                    </Navbar.Header>
+                    <Navbar.Collapse>
+                        <Nav pullRight>
+                            <NavItem eventKey={1} target="_blank" href="https://github.com/DanLearningPython">Github
+                            </NavItem>
+                        </Nav>
+                    </Navbar.Collapse>
+                </Navbar>
+                <Grid>
                     <Row className="show-grid">
-            <Col xs={12} md={8}>
-            {this.state.tweets && this.state.tweets.map(function(tweet, i) {
+                        <Col md={12}>
+                            <LineGraph config={this.state.config}/>
 
-              return (
-                <div key={i}>
-                  {tweet.tweet}  {tweet.sentiment.positive} {tweet.sentiment.negative}
-                </div>
-              );
-            })}
-            </Col>
-            <Col xs={6} md={4}><code>&lt;{'Col xs={6} md={4}'} /&gt;</code></Col>
-          </Row>
-        </Grid>
+                        </Col>
+                    </Row>
+                    <Row className="show-grid">
+                        <Col xs={12} md={8}>
+                            {this.state.tweets && this.state.tweets.map(function (tweet, i) {
+
+                                return (
+                                    <div key = {i} >
+                                        <strong>[{moment(tweet.timestamp).format("ddd, MMM Do - h:mm:ss a")}] :</strong>
+                                        {tweet.tweet}{tweet.sentiment.positive}
+                                    </div >
+                                );
+                            })}
+                        </Col>
+                        <Col xs={6} md={4}>
+                            <code>&lt;{'Col xs={6} md={4}'} /&gt;</code>
+                        </Col>
+                    </Row>
+                </Grid>
 
 
-      </div>
-    );
-  }
+            </div>
+        );
+    }
 }
 
 export default App;
